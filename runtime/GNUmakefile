@@ -21,6 +21,10 @@ LIBS=-L. -lgtest -lrt -pthread
 CXX_ARGS=-std=c++17 -g -O3
 CXX?=g++
 
+ifeq ($(PREFIX),)
+    PREFIX := /usr/local
+endif
+
 all: decompressor libNanoLog.a
 
 %.o: %.cc
@@ -60,10 +64,23 @@ perf: Perf.o PerfHelper.o PerfHelper.h $(OBJECTS) $(GENERATED_OBJ)
 decompressor: $(GENERATED_OBJ) Cycles.o Util.o Log.o LogDecompressor.cc
 	$(CXX) $(CXX_ARGS) $(EXTRA_NANOLOG_FLAGS) $^ -o decompressor $(INCLUDES) -Igenerated -Werror
 
+install: decompressor libNanoLog.a
+	install -d $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 libNanoLog.a $(DESTDIR)$(PREFIX)/lib/
+	install -d $(DESTDIR)$(PREFIX)/include/NanoLog
+	install -m 644 *.h $(DESTDIR)$(PREFIX)/include/NanoLog
+	install -d $(DESTDIR)$(PREFIX)/bin/
+	install -m 755 decompressor $(DESTDIR)$(PREFIX)/bin/
+
 clean:
 	rm -f Perf test compressedLog ./decompressor $(GENERATED_OBJ) $(TEST_BUILD_DIR)/*.o *.o *.gch *.log ./.depend
 
-clean-all: clean
+clean-install:
+	rm $(DESTDIR)$(PREFIX)/lib/libNanoLog.a
+	rm -r $(DESTDIR)$(PREFIX)/include/NanoLog
+	rm $(DESTDIR)$(PREFIX)/bin/decompressor
+
+clean-all: clean clean-install
 	rm -f libgtest.a testHelper/GeneratedCode.cc
 
 # Automatic rules to build *.h dependencies. Taken from
